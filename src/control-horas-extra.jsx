@@ -63,6 +63,7 @@ function dayLabel(iso) {
 
 const STORAGE_KEY = "ot-entries";
 const SETTINGS_KEY = "ot-settings";
+const DEFAULT_RATES = { extra: "3506,75", doble: "4675,00", dia: "24543,74" };
 
 export default function OvertimeTracker() {
   const [entries, setEntries] = useState([]);
@@ -70,7 +71,7 @@ export default function OvertimeTracker() {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const [rates, setRates] = useState({ extra: "", doble: "", dia: "" });
+  const [rates, setRates] = useState(DEFAULT_RATES);
   const [showSettings, setShowSettings] = useState(false);
 
   const [form, setForm] = useState({
@@ -100,7 +101,7 @@ export default function OvertimeTracker() {
           note: e.note || "",
         }));
 
-        let loadedRates = { extra: "", doble: "", dia: "" };
+        let loadedRates = DEFAULT_RATES;
         try {
           const raw2 = localStorage.getItem(SETTINGS_KEY);
           if (raw2) {
@@ -116,7 +117,7 @@ export default function OvertimeTracker() {
             }
           }
         } catch (e) {
-          loadedRates = { extra: "", doble: "", dia: "" };
+          loadedRates = DEFAULT_RATES;
         }
 
         setEntries(loadedEntries.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id));
