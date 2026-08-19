@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Clock, Settings, X, Loader2 } from "lucide-react";
+import { Plus, Trash2, Clock, Settings, X, Loader2, Download } from "lucide-react";
 
 const INK = "#07080C";
 const CARD = "#10131B";
@@ -43,6 +43,11 @@ function fmtQty(type, qty) {
   const n = fmtHours(qty);
   if (type === "dia") return `${n} ${qty === 1 ? "día adicional" : "días adicionales"}`;
   return `${n} ${type === "doble" ? "h doble" : "h extra"}`;
+}
+
+function csvEscape(val) {
+  const s = String(val ?? "");
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 function summarizeBucket(bucket) {
@@ -176,6 +181,45 @@ export default function OvertimeTracker() {
 
   function deleteEntry(id) {
     persistEntries(entries.filter((e) => e.id !== id));
+  }
+
+  function downloadCSV(monthKey, monthLbl) {
+    const items = monthKey === "all"
+      ? entries
+      : entries.filter((e) => {
+          const d = new Date(e.date + "T00:00:00");
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}` === monthKey;
+        });
+    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
+
+    const rows = [["Fecha", "Tipo", "Cantidad", "Unidad", "Nota"]];
+    for (const e of sorted) {
+      const meta = TYPE_META[e.type] || TYPE_META.extra;
+      rows.push([e.date, meta.label, fmtHours(e.qty), meta.unit, e.note || ""]);
+    }
+
+    const sums = { extra: 0, doble: 0, dia: 0 };
+    for (const e of items) sums[e.type || "extra"] += e.qty;
+    rows.push([]);
+    for (const t of TYPES) {
+      if (sums[t.key] > 0) rows.push([`Total ${t.label}`, "", fmtHours(sums[t.key]), t.unit, ""]);
+    }
+    const rateOf = (key) => parseFloat(String(rates[key] || "").replace(",", "."));
+    const totalPay = TYPES.reduce((s, t) => (rateOf(t.key) > 0 ? s + sums[t.key] * rateOf(t.key) : s), 0);
+    if (TYPES.some((t) => rateOf(t.key) > 0)) {
+      rows.push(["Pago estimado", "", totalPay.toLocaleString("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 }), "", ""]);
+    }
+
+    const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `horas-extra-${monthKey === "all" ? "todos" : monthLbl.replace(/\s+/g, "-")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   const stats = useMemo(() => {
@@ -380,17 +424,30 @@ export default function OvertimeTracker() {
         {grouped.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: MUTED, letterSpacing: 0.3 }}>REGISTROS</div>
-            <select
-              value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
-              className="mono"
-              style={{ background: CARD, border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: "8px 10px", color: PAPER, fontSize: 12.5, cursor: "pointer", textTransform: "capitalize" }}
-            >
-              <option value="all">Todos los meses</option>
-              {grouped.map(([key, group]) => (
-                <option key={key} value={key}>{group.label}</option>
-              ))}
-            </select>
+            <div style={{ display: "flex", gap: 8 }}>
+              <select
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                className="mono"
+                style={{ background: CARD, border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: "8px 10px", color: PAPER, fontSize: 12.5, cursor: "pointer", textTransform: "capitalize" }}
+              >
+                <option value="all">Todos los meses</option>
+                {grouped.map(([key, group]) => (
+                  <option key={key} value={key}>{group.label}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => {
+                  const g = grouped.find(([key]) => key === monthFilter);
+                  downloadCSV(monthFilter, g ? g[1].label : "todos");
+                }}
+                aria-label="Descargar registros"
+                title="Descargar CSV"
+                style={{ background: CARD, border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: "8px 10px", color: MUTED, cursor: "pointer", display: "flex", alignItems: "center" }}
+              >
+                <Download size={15} />
+              </button>
+            </div>
           </div>
         )}
 
