@@ -1,20 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Trash2, Clock, Settings, X, Loader2 } from "lucide-react";
 
-const INK = "#141821";
-const CARD = "#1C222E";
-const CARD_BORDER = "#2A3242";
-const PAPER = "#E9E6DC";
-const MUTED = "#8B93A3";
-const AMBER = "#E3A038";
-const TEAL = "#4FA88F";
+const INK = "#07080C";
+const CARD = "#10131B";
+const CARD_BORDER = "#232B3C";
+const PAPER = "#EDF0F5";
+const MUTED = "#7C8697";
+const BLUE = "#3B8CF5";
+const CYAN = "#4FC3F7";
 const RUST = "#C1554B";
-const VIOLET = "#8D7FBF";
+const SILVER = "#B8C1CE";
 
 const TYPES = [
-  { key: "extra", label: "Hora extra", plural: "horas extra", unit: "h", color: AMBER },
-  { key: "doble", label: "Hora doble", plural: "horas dobles", unit: "h", color: TEAL },
-  { key: "dia", label: "Día adicional", plural: "días adicionales", unit: "día", color: VIOLET },
+  { key: "extra", label: "Hora extra", plural: "horas extra", unit: "h", color: BLUE },
+  { key: "doble", label: "Hora doble", plural: "horas dobles", unit: "h", color: CYAN },
+  { key: "dia", label: "Día adicional", plural: "días adicionales", unit: "día", color: SILVER },
 ];
 const TYPE_META = Object.fromEntries(TYPES.map((t) => [t.key, t]));
 
@@ -230,7 +230,7 @@ export default function OvertimeTracker() {
   if (loading) {
     return (
       <div style={{ background: INK, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 className="animate-spin" color={AMBER} size={28} />
+        <Loader2 className="animate-spin" color={BLUE} size={28} />
       </div>
     );
   }
@@ -242,7 +242,7 @@ export default function OvertimeTracker() {
         * { box-sizing: border-box; }
         .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
-        .otbtn:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid ${AMBER}; outline-offset: 2px; }
+        .otbtn:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid ${BLUE}; outline-offset: 2px; }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
       `}</style>
 
@@ -250,12 +250,12 @@ export default function OvertimeTracker() {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 8, background: AMBER, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Clock size={18} color={INK} />
+            <div style={{ width: 34, height: 34, borderRadius: 8, background: `linear-gradient(135deg, ${BLUE}, #1B4FB0)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 0 1px ${CARD_BORDER}` }}>
+              <Clock size={18} color={PAPER} />
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 0.2 }}>Control de horas extra</div>
-              <div className="mono" style={{ fontSize: 11, color: MUTED }}>REGISTRO PERSONAL</div>
+              <div className="mono" style={{ fontSize: 10.5, color: MUTED, letterSpacing: 0.6 }}>JCS TECH SOLUTIONS</div>
             </div>
           </div>
           <button
@@ -305,7 +305,7 @@ export default function OvertimeTracker() {
             ))}
           </div>
           {stats.monthPay !== null && (
-            <div className="mono" style={{ fontSize: 13, color: TEAL, marginTop: 12 }}>≈ {stats.monthPay.toLocaleString("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 })} estimado</div>
+            <div className="mono" style={{ fontSize: 13, color: CYAN, marginTop: 12 }}>≈ {stats.monthPay.toLocaleString("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 })} estimado</div>
           )}
           <div style={{ display: "flex", gap: 18, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${CARD_BORDER}`, flexWrap: "wrap" }}>
             <div>
@@ -368,7 +368,7 @@ export default function OvertimeTracker() {
             onClick={addEntry}
             disabled={saving}
             className="otbtn"
-            style={{ width: "100%", background: AMBER, color: INK, border: "none", borderRadius: 8, padding: "11px 12px", fontWeight: 700, fontSize: 13.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1 }}
+            style={{ width: "100%", background: BLUE, color: INK, border: "none", borderRadius: 8, padding: "11px 12px", fontWeight: 700, fontSize: 13.5, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1 }}
           >
             <Plus size={16} /> Agregar registro
           </button>
@@ -408,7 +408,7 @@ export default function OvertimeTracker() {
             <div key={key} style={{ marginBottom: 22 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, padding: "0 2px", gap: 10 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: MUTED, textTransform: "capitalize" }}>{group.label}</div>
-                <div className="mono" style={{ fontSize: 12, color: TEAL, textAlign: "right" }}>{summarizeBucket(group.sums)}</div>
+                <div className="mono" style={{ fontSize: 12, color: CYAN, textAlign: "right" }}>{summarizeBucket(group.sums)}</div>
               </div>
               <div style={{ background: CARD, border: `1px solid ${CARD_BORDER}`, borderRadius: 12, overflow: "hidden" }}>
                 {group.items.map((e, i) => {
