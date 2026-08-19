@@ -443,6 +443,10 @@ export default function OvertimeTracker() {
             </div>
           ))
         )}
+
+        <div style={{ textAlign: "center", fontSize: 11, color: MUTED, marginTop: 32 }}>
+          © 2026 JCS Tech Solutions — Costa Rica
+        </div>
       </div>
     </div>
   );
