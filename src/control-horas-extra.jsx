@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Trash2, Clock, Settings, X, Loader2, Download } from "lucide-react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const INK = "#07080C";
 const CARD = "#10131B";
@@ -43,11 +45,6 @@ function fmtQty(type, qty) {
   const n = fmtHours(qty);
   if (type === "dia") return `${n} ${qty === 1 ? "día adicional" : "días adicionales"}`;
   return `${n} ${type === "doble" ? "h doble" : "h extra"}`;
-}
-
-function csvEscape(val) {
-  const s = String(val ?? "");
-  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 function summarizeBucket(bucket) {
@@ -183,7 +180,7 @@ export default function OvertimeTracker() {
     persistEntries(entries.filter((e) => e.id !== id));
   }
 
-  function downloadCSV(monthKey, monthLbl) {
+  function downloadPDF(monthKey, monthLbl) {
     const items = monthKey === "all"
       ? entries
       : entries.filter((e) => {
@@ -192,34 +189,62 @@ export default function OvertimeTracker() {
         });
     const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
 
-    const rows = [["Fecha", "Tipo", "Cantidad", "Unidad", "Nota"]];
-    for (const e of sorted) {
-      const meta = TYPE_META[e.type] || TYPE_META.extra;
-      rows.push([e.date, meta.label, fmtHours(e.qty), meta.unit, e.note || ""]);
-    }
-
     const sums = { extra: 0, doble: 0, dia: 0 };
     for (const e of items) sums[e.type || "extra"] += e.qty;
-    rows.push([]);
-    for (const t of TYPES) {
-      if (sums[t.key] > 0) rows.push([`Total ${t.label}`, "", fmtHours(sums[t.key]), t.unit, ""]);
-    }
     const rateOf = (key) => parseFloat(String(rates[key] || "").replace(",", "."));
     const totalPay = TYPES.reduce((s, t) => (rateOf(t.key) > 0 ? s + sums[t.key] * rateOf(t.key) : s), 0);
-    if (TYPES.some((t) => rateOf(t.key) > 0)) {
-      rows.push(["Pago estimado", "", totalPay.toLocaleString("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 }), "", ""]);
+    const hasAnyRate = TYPES.some((t) => rateOf(t.key) > 0);
+    const fmtCRC = (n) => `CRC ${n.toLocaleString("es-CR", { maximumFractionDigits: 0 })}`;
+
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFontSize(16);
+    doc.setFont(undefined, "bold");
+    doc.text("Control de horas extra", 40, 46);
+    doc.setFontSize(10);
+    doc.setFont(undefined, "normal");
+    doc.setTextColor(110, 110, 110);
+    doc.text("JCS Tech Solutions", 40, 62);
+    doc.text(monthKey === "all" ? "Todos los registros" : monthLbl, pageWidth - 40, 46, { align: "right" });
+    doc.setTextColor(20, 20, 20);
+
+    autoTable(doc, {
+      startY: 80,
+      head: [["Fecha", "Tipo", "Cantidad", "Nota"]],
+      body: sorted.map((e) => {
+        const meta = TYPE_META[e.type] || TYPE_META.extra;
+        return [e.date, meta.label, fmtQty(e.type, e.qty), e.note || ""];
+      }),
+      styles: { fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: [59, 140, 245], textColor: 255 },
+      theme: "striped",
+    });
+
+    let y = doc.lastAutoTable.finalY + 24;
+    doc.setFontSize(11);
+    doc.setFont(undefined, "bold");
+    doc.text("Resumen", 40, y);
+    y += 18;
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+    for (const t of TYPES) {
+      if (sums[t.key] > 0) {
+        doc.text(`${t.label}: ${fmtQty(t.key, sums[t.key])}`, 40, y);
+        y += 16;
+      }
+    }
+    if (hasAnyRate) {
+      y += 4;
+      doc.setFont(undefined, "bold");
+      doc.text(`Pago estimado: ${fmtCRC(totalPay)}`, 40, y);
     }
 
-    const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\r\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `horas-extra-${monthKey === "all" ? "todos" : monthLbl.replace(/\s+/g, "-")}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Generado el ${todayISO()}`, 40, doc.internal.pageSize.getHeight() - 24);
+
+    doc.save(`horas-extra-${monthKey === "all" ? "todos" : monthLbl.replace(/\s+/g, "-")}.pdf`);
   }
 
   const stats = useMemo(() => {
@@ -439,10 +464,10 @@ export default function OvertimeTracker() {
               <button
                 onClick={() => {
                   const g = grouped.find(([key]) => key === monthFilter);
-                  downloadCSV(monthFilter, g ? g[1].label : "todos");
+                  downloadPDF(monthFilter, g ? g[1].label : "todos");
                 }}
                 aria-label="Descargar registros"
-                title="Descargar CSV"
+                title="Descargar PDF"
                 style={{ background: CARD, border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: "8px 10px", color: MUTED, cursor: "pointer", display: "flex", alignItems: "center" }}
               >
                 <Download size={15} />
