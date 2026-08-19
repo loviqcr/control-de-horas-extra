@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "jcs-tech-solutions"
+  },
+  "targets": {
+    "jcs-tech-solutions": {
+      "hosting": {
+        "control-horas-extra": [
+          "control-horas-extra"
+        ]
+      }
+    }
+  }
+}
