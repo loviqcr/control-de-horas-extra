@@ -250,9 +250,11 @@ export default function OvertimeTracker() {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 8, background: `linear-gradient(135deg, ${BLUE}, #1B4FB0)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 0 1px ${CARD_BORDER}` }}>
-              <Clock size={18} color={PAPER} />
-            </div>
+            <img
+              src="/logo-mark.png"
+              alt="JCS Tech Solutions"
+              style={{ width: 34, height: 34, borderRadius: 8, boxShadow: `0 0 0 1px ${CARD_BORDER}`, objectFit: "cover" }}
+            />
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 0.2 }}>Control de horas extra</div>
               <div className="mono" style={{ fontSize: 10.5, color: MUTED, letterSpacing: 0.6 }}>JCS TECH SOLUTIONS</div>
